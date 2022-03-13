@@ -18,6 +18,8 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # =============================================================================
 
+from concurrent.futures import process
+from operator import is_
 import re
 import html
 import json
@@ -90,91 +92,111 @@ def clean(extractor, text, expand_templates=False, html_safe=True):
     # Drop tables
     text = dropNested(text, r'{\|', r'\|}')
 
+    extractor.sections = parse_sections(extractor, text)
+
     # replace external links
     text = replaceExternalLinks(text)
+    extractor.sections = [{**section, "text": replaceExternalLinks(section["text"])} for section in extractor.sections]
+
 
     # replace internal links
     text = replaceInternalLinks(extractor, text)
+    extractor.sections = [{**section, "text": replaceInternalLinks(extractor, section["text"], section)} for section in extractor.sections]
+
     
     # drop MagicWords behavioral switches
     text = magicWordsRE.sub('', text)
+    extractor.sections = [{**section, "text": magicWordsRE.sub('', section["text"])} for section in extractor.sections]
+
 
     # ############### Process HTML ###############
 
-    # turn into HTML, except for the content of <syntaxhighlight>
-    res = ''
-    cur = 0
-    for m in syntaxhighlight.finditer(text):
-        end = m.end()
-        res += unescape(text[cur:m.start()]) + m.group(1)
-        cur = end
-    text = res + unescape(text[cur:])
+    #TODO FIX these: '"\moimoi\"' italic
+    def process_html(text):
+        # turn into HTML, except for the content of <syntaxhighlight>
+        res = ''
+        cur = 0
+        for m in syntaxhighlight.finditer(text):
+            end = m.end()
+            res += unescape(text[cur:m.start()]) + m.group(1)
+            cur = end
+        text = res + unescape(text[cur:])
 
-    # Handle bold/italic/quote
-    if extractor.HtmlFormatting:
-        text = bold_italic.sub(r'<b>\1</b>', text)
-        text = bold.sub(r'<b>\1</b>', text)
-        text = italic.sub(r'<i>\1</i>', text)
-    else:
-        text = bold_italic.sub(r'\1', text)
-        text = bold.sub(r'\1', text)
-        text = italic_quote.sub(r'"\1"', text)
-        text = italic.sub(r'"\1"', text)
-        text = quote_quote.sub(r'"\1"', text)
-    # residuals of unbalanced quotes
-    text = text.replace("'''", '').replace("''", '"')
+        # Handle bold/italic/quote
+        if extractor.HtmlFormatting:
+            text = bold_italic.sub(r'<b>\1</b>', text)
+            text = bold.sub(r'<b>\1</b>', text)
+            text = italic.sub(r'<i>\1</i>', text)
+        else:
+            text = bold_italic.sub(r'\1', text)
+            text = bold.sub(r'\1', text)
+            text = italic_quote.sub(r'"\1"', text)
+            text = italic.sub(r'"\1"', text)
+            text = quote_quote.sub(r'"\1"', text)
+        # residuals of unbalanced quotes
+        text = text.replace("'''", '').replace("''", '"')
 
-    # Collect spans
+        # Collect spans
 
-    spans = []
-    # Drop HTML comments
-    for m in comment.finditer(text):
-        spans.append((m.start(), m.end()))
-
-    # Drop self-closing tags
-    for pattern in selfClosing_tag_patterns:
-        for m in pattern.finditer(text):
+        spans = []
+        # Drop HTML comments
+        for m in comment.finditer(text):
             spans.append((m.start(), m.end()))
 
-    # Drop ignored tags
-    for left, right in ignored_tag_patterns:
-        for m in left.finditer(text):
-            spans.append((m.start(), m.end()))
-        for m in right.finditer(text):
-            spans.append((m.start(), m.end()))
+        # Drop self-closing tags
+        for pattern in selfClosing_tag_patterns:
+            for m in pattern.finditer(text):
+                spans.append((m.start(), m.end()))
 
-    # Bulk remove all spans
-    text = dropSpans(spans, text)
+        # Drop ignored tags
+        for left, right in ignored_tag_patterns:
+            for m in left.finditer(text):
+                spans.append((m.start(), m.end()))
+            for m in right.finditer(text):
+                spans.append((m.start(), m.end()))
 
-    # Drop discarded elements
-    for tag in discardElements:
-        text = dropNested(text, r'<\s*%s\b[^>/]*>' % tag, r'<\s*/\s*%s>' % tag)
+        # Bulk remove all spans
+        text = dropSpans(spans, text)
 
-    if not extractor.HtmlFormatting:
-        # Turn into text what is left (&amp;nbsp;) and <syntaxhighlight>
-        text = unescape(text)
+        # Drop discarded elements
+        for tag in discardElements:
+            text = dropNested(text, r'<\s*%s\b[^>/]*>' % tag, r'<\s*/\s*%s>' % tag)
 
-    # Expand placeholders
-    for pattern, placeholder in placeholder_tag_patterns:
-        index = 1
-        for match in pattern.finditer(text):
-            text = text.replace(match.group(), '%s_%d' % (placeholder, index))
-            index += 1
+        if not extractor.HtmlFormatting:
+            # Turn into text what is left (&amp;nbsp;) and <syntaxhighlight>
+            text = unescape(text)
 
-    text = text.replace('<<', u'«').replace('>>', u'»')
+        # Expand placeholders
+        for pattern, placeholder in placeholder_tag_patterns:
+            index = 1
+            for match in pattern.finditer(text):
+                text = text.replace(match.group(), '%s_%d' % (placeholder, index))
+                index += 1
 
-    #############################################
+        text = text.replace('<<', u'«').replace('>>', u'»')
+        return text
+        #############################################
+
+    text = process_html(text)
+    extractor.sections = [{**section, "text": process_html(section["text"])} for section in extractor.sections]
 
     # Cleanup text
-    text = text.replace('\t', ' ')
-    text = spaces.sub(' ', text)
-    text = dots.sub('...', text)
-    text = re.sub(u' (,:\.\)\]»)', r'\1', text)
-    text = re.sub(u'(\[\(«) ', r'\1', text)
-    text = re.sub(r'\n\W+?\n', '\n', text, flags=re.U)  # lines with only punctuations
-    text = text.replace(',,', ',').replace(',.', '.')
-    if html_safe:
-        text = html.escape(text, quote=False)
+    def cleanup_text(text, html_safe=html_safe):
+        text = text.replace('\t', ' ')
+        text = spaces.sub(' ', text)
+        text = dots.sub('...', text)
+        text = re.sub(u' (,:\.\)\]»)', r'\1', text)
+        text = re.sub(u'(\[\(«) ', r'\1', text)
+        text = re.sub(r'\n\W+?\n', '\n', text, flags=re.U)  # lines with only punctuations
+        text = text.replace(',,', ',').replace(',.', '.')
+        if html_safe:
+            text = html.escape(text, quote=False)
+        
+        return text
+
+    text = cleanup_text(text, html_safe)
+    extractor.sections = [{**section, "text": cleanup_text(section["text"], html_safe)} for section in extractor.sections]
+
     return text
 
 
@@ -187,7 +209,7 @@ listItem = {'*': '<li>%s</li>', '#': '<li>%s</<li>', ';': '<dt>%s</dt>',
             ':': '<dd>%s</dd>'}
 
 
-def compact(extractor, text, mark_headers=False):
+def compact(extractor, text, mark_headers=True):
     """Deal with headers, lists, empty sections, residuals of tables.
     :param text: convert to HTML
     """
@@ -196,33 +218,31 @@ def compact(extractor, text, mark_headers=False):
     headers = {}  # Headers for unfilled sections
     emptySection = False  # empty sections are discarded
     listLevel = ''  # nesting of lists
-
     for line in text.split('\n'):
-
         if not line:
             if len(listLevel):    # implies Extractor.HtmlFormatting
                 for c in reversed(listLevel):
                     page.append(listClose[c])
                     listLevel = ''
             continue
-
+        
+      
         # Handle section titles
         m = section.match(line)
         if m:
             title = m.group(2)
             lev = len(m.group(1))
-            extractor.sub_headers.append({"line": line, "title": title, "hlevel": lev})
             if Extractor.HtmlFormatting:
                 page.append("<h%d>%s</h%d>" % (lev, title, lev))
             if title and title[-1] not in '!?':
                 title += '.'
-
+            
             if mark_headers:
                 title = "## " + title
 
             headers[lev] = title
             # drop previous headers
-            headers = { k:v for k,v in headers.items() if k <= lev }
+            headers = {k:v for k,v in headers.items() if k <= lev}
             emptySection = True
             continue
         # Handle page title
@@ -287,6 +307,7 @@ def compact(extractor, text, mark_headers=False):
             # # Drop preformatted
             # elif line[0] == ' ':
             #     continue
+  
     return page
 
 
@@ -436,6 +457,30 @@ def makeExternalImage(url, alt=''):
     else:
         return alt
 
+def parse_sections(extractor, text):
+    is_introduction = True
+    section_text = ''
+    sections = []
+    title = "Introduction"
+    lev = 1
+    for line in text.split("\n"):
+        section_match = section.match(line)
+        if section_match is None:
+            section_text += line+"\n"
+            continue
+        if section_match and is_introduction:
+            is_introduction = False
+            sections.append({"title": title, "section": "introduction", "text": section_text,  "level": 1})
+        elif section_match and is_introduction is False:
+            sections.append({"title": title, "section": "sub_section", "level": lev, "text": section_text})
+        
+        title = section_match.group(2)
+        lev = len(section_match.group(1))
+        section_text = ""
+        
+    return sections
+
+
 
 # ----------------------------------------------------------------------
 # WikiLinks
@@ -444,16 +489,17 @@ def makeExternalImage(url, alt=''):
 # Can be nested [[File:..|..[[..]]..|..]], [[Category:...]], etc.
 # Also: [[Help:IPA for Catalan|[andora]]]
 
-
-def replaceInternalLinks(extractor, text):
+def replaceInternalLinks(extractor, text, section=None):
     """
     Replaces external links of the form:
     [[title |...|label]]trail
 
     with title concatenated with trail, when present, e.g. 's' for plural.
     """
+    class_match = re.compile("^Luokka:(.+)")
     # call this after removal of external links, so we need not worry about
     # triple closing ]]].
+    internal_links = []
     cur = 0
     res = ''
     for s, e in findBalanced(text, ['[['], [']]']):
@@ -481,8 +527,16 @@ def replaceInternalLinks(extractor, text):
                 curp = e1
             label = inner[pipe + 1:].strip()
         res += text[cur:s] + makeInternalLink(title, label) + trail
-        cur = end
+        cur = end        
+
+        class_matched = class_match.match(title)
+        if class_matched:
+            actual_class = class_matched.group(1)
+            extractor.classes.append({"match": title, "class_name": actual_class})
+        internal_links.append({"wikipedia_title": title, "label_in_text": label})
         extractor.internal_links.append({"wikipedia_title": title, "label_in_text": label})
+    if section:
+        section["internal_links"] = internal_links 
     return res + text[cur:]
 
 
@@ -938,8 +992,9 @@ class Extractor():
         self.url = get_url(urlbase, id)
         self.title = title
         self.page = page
+        self.sections = []
+        self.classes = []
         self.internal_links = []
-        self.sub_headers = []
         self.magicWords = MagicWords()
         self.frame = []
         self.recursion_exceeded_1_errs = 0  # template recursion within expandTemplates()
@@ -979,14 +1034,15 @@ class Extractor():
 
         if self.to_json:
             json_data = {
-		'id': self.id,
+		        'id': self.id,
                 'revid': self.revid,
                 'url': self.url,
                 'title': self.title,
-                'text': "\n".join(text),
+                'classes': self.classes,
                 'internal_links': self.internal_links,
-                'sub_headers': self.sub_headers
-            }
+                'whole_text': "\n".join(text),
+                'sections': self.sections
+                }
             out_str = json.dumps(json_data)
             out.write(out_str)
             out.write('\n')
