@@ -60,7 +60,6 @@ discardElements = [
 #
 acceptedNamespaces = ['w', 'wiktionary', 'wikt']
 
-
 def get_url(urlbase, uid):
     return "%s?curid=%s" % (urlbase, uid)
 
@@ -95,8 +94,8 @@ def clean(extractor, text, expand_templates=False, html_safe=True):
     text = replaceExternalLinks(text)
 
     # replace internal links
-    text = replaceInternalLinks(text)
-
+    text = replaceInternalLinks(extractor, text)
+    
     # drop MagicWords behavioral switches
     text = magicWordsRE.sub('', text)
 
@@ -188,7 +187,7 @@ listItem = {'*': '<li>%s</li>', '#': '<li>%s</<li>', ';': '<dt>%s</dt>',
             ':': '<dd>%s</dd>'}
 
 
-def compact(text, mark_headers=False):
+def compact(extractor, text, mark_headers=False):
     """Deal with headers, lists, empty sections, residuals of tables.
     :param text: convert to HTML
     """
@@ -212,6 +211,7 @@ def compact(text, mark_headers=False):
         if m:
             title = m.group(2)
             lev = len(m.group(1))
+            extractor.sub_headers.append({"line": line, "title": title, "hlevel": lev})
             if Extractor.HtmlFormatting:
                 page.append("<h%d>%s</h%d>" % (lev, title, lev))
             if title and title[-1] not in '!?':
@@ -287,7 +287,6 @@ def compact(text, mark_headers=False):
             # # Drop preformatted
             # elif line[0] == ' ':
             #     continue
-
     return page
 
 
@@ -446,7 +445,7 @@ def makeExternalImage(url, alt=''):
 # Also: [[Help:IPA for Catalan|[andora]]]
 
 
-def replaceInternalLinks(text):
+def replaceInternalLinks(extractor, text):
     """
     Replaces external links of the form:
     [[title |...|label]]trail
@@ -483,6 +482,7 @@ def replaceInternalLinks(text):
             label = inner[pipe + 1:].strip()
         res += text[cur:s] + makeInternalLink(title, label) + trail
         cur = end
+        extractor.internal_links.append({"wikipedia_title": title, "label_in_text": label})
     return res + text[cur:]
 
 
@@ -938,6 +938,8 @@ class Extractor():
         self.url = get_url(urlbase, id)
         self.title = title
         self.page = page
+        self.internal_links = []
+        self.sub_headers = []
         self.magicWords = MagicWords()
         self.frame = []
         self.recursion_exceeded_1_errs = 0  # template recursion within expandTemplates()
@@ -963,7 +965,7 @@ class Extractor():
         text = clean(self, text, expand_templates=expand_templates,
                      html_safe=html_safe)
 
-        text = compact(text, mark_headers=mark_headers)
+        text = compact(self, text, mark_headers=mark_headers)
         return text
 
     def extract(self, out, html_safe=True):
@@ -981,7 +983,9 @@ class Extractor():
                 'revid': self.revid,
                 'url': self.url,
                 'title': self.title,
-                'text': "\n".join(text)
+                'text': "\n".join(text),
+                'internal_links': self.internal_links,
+                'sub_headers': self.sub_headers
             }
             out_str = json.dumps(json_data)
             out.write(out_str)
@@ -1002,7 +1006,7 @@ class Extractor():
                 self.recursion_exceeded_3_errs)
         if any(errs):
             logging.warn("Template errors in article '%s' (%s): title(%d) recursion(%d, %d, %d)",
-                         self.title, self.id, *errs)
+                         self.title, self.id, *errs)       
 
     # ----------------------------------------------------------------------
     # Expand templates
