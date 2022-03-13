@@ -82,7 +82,7 @@ def clean(extractor, text, expand_templates=False, html_safe=True):
     if expand_templates:
         # expand templates
         # See: http://www.mediawiki.org/wiki/Help:Templates
-        pdb.set_trace()         # DEBUG
+        #pdb.set_trace()         # DEBUG
         text = extractor.expandTemplates(text)
     else:
         # Drop transclusions (template, parser functions)
