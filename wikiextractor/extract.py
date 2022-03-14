@@ -1021,6 +1021,10 @@ class Extractor():
                      html_safe=html_safe)
 
         text = compact(self, text, mark_headers=mark_headers)
+        for section in self.sections:
+            section["text"] = compact(self, section["text"], mark_headers=mark_headers)
+
+
         return text
 
     def extract(self, out, html_safe=True):
@@ -1039,7 +1043,7 @@ class Extractor():
                 'url': self.url,
                 'title': self.title,
                 'classes': self.classes,
-                'internal_links': self.internal_links,
+                #'internal_links': self.internal_links,
                 'whole_text': "\n".join(text),
                 'sections': self.sections
                 }
