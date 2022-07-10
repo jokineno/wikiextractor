@@ -96,6 +96,14 @@ modules = {
         'convert': lambda x, u, *rest: x + ' ' + u,  # no conversion
     }
 }
+
+import json 
+print("Reading title2id.json")
+with open("title2id.json", "r") as f:
+    mapping = json.load(f)
+
+#print(list(mapping.keys())[:10])
+
 # ----------------------------------------------------------------------
 # Expand using WikiMedia API
 # import json
@@ -309,6 +317,7 @@ def collect_pages(text):
             title = m.group(3)
         elif tag == 'redirect':
             redirect = True
+            redirect_title = re.search(r'title="(.*)"',line).group(1)
         elif tag == 'text':
             inText = True
             line = line[m.start(3):m.end(3)]
@@ -323,8 +332,7 @@ def collect_pages(text):
             page.append(line)
         elif tag == '/page':
             colon = title.find(':')
-            if (colon < 0 or (title[:colon] in acceptedNamespaces) and id != last_id and
-                    not redirect and not title.startswith(templateNamespace)):
+            if (colon < 0 or (title[:colon] in acceptedNamespaces)) and (id != last_id and not redirect and not title.startswith(templateNamespace)):
                 yield (id, revid, title, page)
                 last_id = id
             id = ''
@@ -481,7 +489,7 @@ def extract_process(jobs_queue, output_queue, html_safe):
         job = jobs_queue.get()  # job is (id, revid, urlbase, title, page)
         if job:
             out = StringIO()  # memory buffer
-            Extractor(*job[:-1]).extract(out, html_safe)  # (id, urlbase, title, page)
+            Extractor(*job[:-1]).extract(out, html_safe, mapping=mapping)  # (id, urlbase, title, page)
             text = out.getvalue()
             output_queue.put((job[-1], text))  # (ordinal, extracted_text)
             out.close()

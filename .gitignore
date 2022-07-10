@@ -50,3 +50,8 @@ G*
 Session.vim
 .netrwhist
 *~
+
+/debug_output/
+/text/
+/test/
+*.json
