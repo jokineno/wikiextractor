@@ -1,17 +1,20 @@
 import glob 
 import json 
 def get_files():
+  print("Reading all wiki files...")
   wiki_files = glob.glob("./text/*/wiki*")
+  print("Done reading.")
   return wiki_files 
 
 valid_ids = set()
+
 
 def build_metadata():
   global valid_ids
   wiki_files = get_files()
   metadata = {}
   for i,wiki in enumerate(wiki_files):
-    print(f"Handling {i+1}/{len(wiki_files)}, {wiki=}")
+    print(f"Handling {i+1}/{len(wiki_files)}, {wiki}")
     with open(wiki, "r") as f:
       data = f.read()
     metadata = handle_wiki(data, metadata)
@@ -19,9 +22,13 @@ def build_metadata():
   write_data(output_path, metadata)
   write_data("valid_ids.json", list(valid_ids))
 
+
 def write_data(output_path, data):
+  print("Saving data to path {}".format(output_path))
   with open(output_path, "w") as f:
     f.write(json.dumps(data))
+  print("Saved.")
+
 
 def handle_wiki(data, metadata):  
   global valid_ids
@@ -33,14 +40,16 @@ def handle_wiki(data, metadata):
     paper_id = sample["id"]
 
     try:
-      introduction_list_of_sentences = sample["introduction"][0]
+      introduction_list_of_sentences = sample["introduction"][0] #list of list
     except IndexError:
       introduction_list_of_sentences = sample["introduction"]
     #print(introduction_list_of_sentences); break;
-    introduction_text = " ".join(introduction_list_of_sentences)
+    introduction_text = " ".join(introduction_list_of_sentences) #join sentences
     title = sample["title"]
 
-    if len(introduction_text) < 50:
+    character_count_filter = 50
+    if len(introduction_text) < character_count_filter: #skip introductions that are less than 50 characters. Do configurable.
+      print("Skipping article")
       pass
     elif "(täsmennyssivu)" in title:
       pass
@@ -53,5 +62,12 @@ def handle_wiki(data, metadata):
   return metadata
 
 build_metadata()
+
+def main():
+  build_metadata()
+
+
+if __name__ == "__main__":
+  main()
    
 

@@ -33,7 +33,6 @@ metadata = combine()
 output_path = "final_citation_data.json"
 with open(output_path, "w") as f:
     f.write(json.dumps(metadata))
-
 print(f"Wrote metadata to {output_path}")
 
 print("Generating sample with 100 keys")

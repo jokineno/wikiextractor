@@ -1,4 +1,8 @@
 import json 
+"""
+This script reads metadata.json and final_citation_data.json and checks if there are problems. 
+"""
+
 
 # open metadata 
 with open("metadata.json", "r") as f:
@@ -13,7 +17,6 @@ def extract_articles(citations):
     for article_id, other_papers in citations.items():
         articles.add(article_id)
         articles.update(list(other_papers.keys()))
-
     return articles
 
 all_articles = extract_articles(citations)
