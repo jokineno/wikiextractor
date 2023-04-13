@@ -51,7 +51,11 @@ Session.vim
 .netrwhist
 *~
 
-/debug_output/
-/text/
+./debug_output/
+/text
 /test/
+/training/
 *.json
+*.ipynb
+*.py.log
+wiki_files.zip

@@ -9,7 +9,13 @@ There is basically some indirect relationship between P1 and P3.
 import json 
 from tqdm import tqdm
 
+from common import setup_logging
+import sys
+log_file = sys.argv[0] + ".log"
+logger = setup_logging(log_output=log_file)
+
 def read_files():
+    logger.info("Reading direct_citations.json")
     with open("direct_citations.json", "r") as f:
         direct_data = json.load(f)
     
@@ -18,27 +24,18 @@ def read_files():
 
     return direct_data, hard_negatives
 
-def combine():
-    metadata = {}
-    direct, hard = read_files()
 
+def combine_citations():
+    direct, hard = read_files()
     for key in tqdm(direct):
         direct[key].update(hard[key])
-
-
     return direct
 
-import random
-metadata = combine()
-output_path = "final_citation_data.json"
-with open(output_path, "w") as f:
-    f.write(json.dumps(metadata))
-print(f"Wrote metadata to {output_path}")
 
-print("Generating sample with 100 keys")
-sample = {key: metadata[key] for key in random.sample(list(metadata),100)}
-sample_path = "sample.json"
-with open(sample_path, "w") as f:
-    f.write(json.dumps(sample))
+if __name__ == "__main__":
+    metadata = combine_citations()
+    output_path = "final_citation_data.json"
+    with open(output_path, "w") as f:
+        f.write(json.dumps(metadata))
 
-print(f"Wrote metadata to {sample_path}")
+    print(f"Wrote metadata to {output_path}")

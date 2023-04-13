@@ -13,6 +13,13 @@ but cites a paper that cites paper A.
 import json
 from tqdm import tqdm
 import sys
+
+from common import setup_logging
+import sys
+log_file = sys.argv[0] + ".log"
+logger = setup_logging(log_output=log_file)
+
+
 cache = {}
 
 count = 0

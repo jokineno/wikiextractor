@@ -1,5 +1,11 @@
 import glob 
-import json 
+import json
+
+from common import setup_logging
+import sys
+log_file = sys.argv[0] + ".log"
+logger = setup_logging(log_output=log_file)
+
 def get_files():
   print("Reading all wiki files...")
   wiki_files = glob.glob("./text/*/wiki*")
@@ -14,7 +20,7 @@ def build_metadata():
   wiki_files = get_files()
   metadata = {}
   for i,wiki in enumerate(wiki_files):
-    print(f"Handling {i+1}/{len(wiki_files)}, {wiki}")
+    logger.info(f"Handling {i+1}/{len(wiki_files)}, {wiki}")
     with open(wiki, "r") as f:
       data = f.read()
     metadata = handle_wiki(data, metadata)
@@ -24,10 +30,10 @@ def build_metadata():
 
 
 def write_data(output_path, data):
-  print("Saving data to path {}".format(output_path))
+  logger.info("Saving data to path {}".format(output_path))
   with open(output_path, "w") as f:
     f.write(json.dumps(data))
-  print("Saved.")
+  logger.info("Saved.")
 
 
 def handle_wiki(data, metadata):  
@@ -49,7 +55,7 @@ def handle_wiki(data, metadata):
 
     character_count_filter = 50
     if len(introduction_text) < character_count_filter: #skip introductions that are less than 50 characters. Do configurable.
-      print("Skipping article")
+      logger.debug("Skipping article {}".format(title))
       pass
     elif "(täsmennyssivu)" in title:
       pass
@@ -60,8 +66,6 @@ def handle_wiki(data, metadata):
       metadata[paper_id]["paper_id"] = paper_id
       valid_ids.add(paper_id)
   return metadata
-
-build_metadata()
 
 def main():
   build_metadata()

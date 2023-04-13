@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 echo "Combining citations (direct citations and hard negatives) generating final_citation_data.json"
-pytho combine_citations.py
+python combine_citations.py
 echo "Done."

@@ -2,6 +2,10 @@ import glob
 import json 
 from tqdm import tqdm
 
+from common import setup_logging
+import sys
+log_file = sys.argv[0] + ".log"
+logger = setup_logging(log_output=log_file)
 
 def get_files():
     wiki_files = glob.glob("./text/*/wiki*")

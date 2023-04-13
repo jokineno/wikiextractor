@@ -1,4 +1,11 @@
 import json 
+from common import setup_logging
+
+
+from common import setup_logging
+import sys
+log_file = sys.argv[0] + ".log"
+logger = setup_logging(log_output=log_file)
 
 def build_mapping():
     mapping = {}
