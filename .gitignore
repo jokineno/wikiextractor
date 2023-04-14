@@ -59,3 +59,4 @@ Session.vim
 *.ipynb
 *.py.log
 wiki_files.zip
+/.ipynb_checkpoints/
