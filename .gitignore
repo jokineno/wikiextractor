@@ -60,3 +60,4 @@ Session.vim
 *.py.log
 wiki_files.zip
 /.ipynb_checkpoints/
+/training_demo/

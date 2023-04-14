@@ -26,13 +26,14 @@ class Writer():
         print(f"Finished writing {self.output_path}")
 
 
-def main():
+def main(sample_size, output_path):
     with open("metadata.json", "r") as f:
         data = json.load(f)
 
     articles = list(data.keys())
 
-    if isinstance(sample_size, int):
+    if sample_size is not None and isinstance(sample_size, int):
+        logger.info("Generating {} samples".format(sample_size))
         articles = random.sample(articles, sample_size)
 
     total = len(articles)
@@ -51,8 +52,10 @@ def main():
     print(f"train size: {len(train)} ({train_fraq}),\ntest_size = {len(test)} ({test_fraq}),\n validation size = {len(val)} ({val_fraq})")
 
     for name, dataset in zip(["train.txt", "test.txt", "val.txt"], [train, test, val]):
-        name = f"./training/{name}"
-        writer = Writer(name)
+
+        path = output_path.strip("/") + "/" + name
+        logger.info("Writing file {} to {}".format(name, path))
+        writer = Writer(path)
         for sample_id in dataset:
             writer.write(sample_id)
 
@@ -62,7 +65,11 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--sample_size", type=int, help="sample x articles from all data.")
+    parser.add_argument("--output_path", default="training")
+
     args = parser.parse_args()
     sample_size = args.sample_size
+    output_path = args.output_path
 
-    main()
+
+    main(sample_size, output_path)
