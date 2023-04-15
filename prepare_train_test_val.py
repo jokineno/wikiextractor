@@ -8,7 +8,6 @@ import sys
 log_file = sys.argv[0] + ".log"
 logger = setup_logging(log_output=log_file)
 
-
 random.seed(10)
 
 
@@ -23,7 +22,7 @@ class Writer():
 
     def close(self):
         self.out.close()
-        print(f"Finished writing {self.output_path}")
+        logger.info(f"Finished writing {self.output_path}")
 
 
 def main(sample_size, output_path):
@@ -49,7 +48,7 @@ def main(sample_size, output_path):
     val_fraq = len(val) / total
     train_fraq = len(train) / total
 
-    print(f"train size: {len(train)} ({train_fraq}),\ntest_size = {len(test)} ({test_fraq}),\n validation size = {len(val)} ({val_fraq})")
+    logger.info(f"train size: {len(train)} ({train_fraq}),\ntest_size = {len(test)} ({test_fraq}),\n validation size = {len(val)} ({val_fraq})")
 
     for name, dataset in zip(["train.txt", "test.txt", "val.txt"], [train, test, val]):
 
@@ -60,6 +59,10 @@ def main(sample_size, output_path):
             writer.write(sample_id)
 
         writer.close()
+    all_keys_output_path = output_path.strip("/") + "/" + "all.txt"
+    logger.info("Saving all keys to {}".format(all_keys_output_path))
+    with open(all_keys_output_path, "w") as f:
+        f.write(json.dumps(articles))
 
 
 if __name__ == "__main__":
