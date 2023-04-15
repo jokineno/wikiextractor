@@ -1,6 +1,7 @@
 import sys
 
 import json
+import argparse
 """
 This script reads metadata.json and final_citation_data.json and checks if there are problems. 
 """
@@ -26,15 +27,15 @@ def extract_articles(citations):
     logger.info("Done extracting..")
     return articles
 
-def main():
+def main(metadata_path, citations_path):
     # open metadata
-    logger.info("Reading metadata.json")
-    with open("metadata.json", "r") as f:
+    logger.info("Reading metadata from {}".format(metadata_path))
+    with open(metadata_path, "r") as f:
         metadatas = json.load(f)
 
     # open final citation data
-    logger.info("Reading 'final_citation_data.json'")
-    with open("final_citation_data.json", "r") as f:
+    logger.info("Reading {}".format(citations_path))
+    with open(citations_path, "r") as f:
         citations = json.load(f)
 
     all_articles = extract_articles(citations)
@@ -72,4 +73,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--citations", default="final_citation_data.json")
+    ap.add_argument("--metadata", default="metadata.json")
+    args = ap.parse_args()
+    citations = args.citations
+    metadata = args.metadata
+    main(metadata, citations)

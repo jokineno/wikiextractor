@@ -13,6 +13,9 @@ def read_file(filepath):
     return data
 
 def filter_dict_by_keylist(d, l):
+    """
+    Keep only keys in d that contain in list l
+    """
     return dict(filter(lambda val: val[0] in l, d.items()))
 
 
