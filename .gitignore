@@ -62,3 +62,4 @@ wiki_files.zip
 /.ipynb_checkpoints/
 /training_demo/
 *.txt
+/inference_demo/
