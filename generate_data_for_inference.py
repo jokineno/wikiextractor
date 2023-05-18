@@ -20,13 +20,12 @@ def filter_dict_by_keylist(d, l):
     return dict(filter(lambda val: val[0] in l, d.items()))
 
 
-def main(metadata_path, sample_size, blacklist, output_dir):
+def main(metadata_path, citations_path, sample_size, output_dir):
+    citations = read_file(citations_path)
     metadata = read_file(metadata_path)
-    blacklisted_keys = read_file(blacklist)
 
-    all_keys = list(metadata.keys())
-    whitelisted_keys = [key for key in all_keys if key not in blacklisted_keys]
-    sample_ids_for_embedding = sample(whitelisted_keys, sample_size)
+    all_keys = list(citations.keys())
+    sample_ids_for_embedding = sample(all_keys, sample_size)
     sample_metadata = filter_dict_by_keylist(metadata, sample_ids_for_embedding)
 
     # check lenghts
@@ -49,16 +48,16 @@ def main(metadata_path, sample_size, blacklist, output_dir):
 if __name__ == "__main__":
     logger.info("Start.")
     parser = argparse.ArgumentParser()
-    parser.add_argument("--metadata", required=True)
+    parser.add_argument("--citations", required=True, help="Citation data from hold out set")
+    parser.add_argument("--metadata", required=True, help="Citation data from hold out set")
     parser.add_argument("--sample_size", required=True, type=int)
-    parser.add_argument("--blacklist", required=True)
     parser.add_argument("--output_dir", required=True)
 
     args = parser.parse_args()
+    citations = args.citations
     metadata = args.metadata
     sample_size = args.sample_size
-    blacklist = args.blacklist
     output_dir = args.output_dir
 
-    main(metadata, sample_size, blacklist, output_dir)
+    main(metadata, citations, sample_size, output_dir)
     logger.info("Finished.")

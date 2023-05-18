@@ -11,7 +11,6 @@ def main(metadata_path):
     with open("id2title.json", "r") as f:
         id2titlemap = json.load(f)
 
-    
     cross_link_distribution = {}
     for paper_id, data in metadata.items():
         for cls_id in data['classes']:
@@ -24,7 +23,6 @@ def main(metadata_path):
 
     sorted_cross_link_distribution = sorted(cross_link_distribution.items(), key=lambda x: x[1]['count'])
     sorted_cross_link_distribution = dict(sorted_cross_link_distribution)
-
 
     output_path = "wiki_link_distributions.json"
     logger.info("Saving data to {}".format(output_path))

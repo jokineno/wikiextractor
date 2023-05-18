@@ -12,6 +12,7 @@ def read_file(filepath):
         data = json.load(f)
     return data
 
+
 def filter_dict_by_keylist(d, l):
     """
     Keep only keys in d that contain in list l
@@ -50,8 +51,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     metadata = args.metadata
     citations = args.citations
-    keyslistpath = args.idlist
+    paper_id_list = args.idlist
     output_dir = args.output_dir
 
-    main(metadata, citations, keyslistpath, output_dir)
+    main(metadata, citations, paper_id_list, output_dir)
     logger.info("Finished.")

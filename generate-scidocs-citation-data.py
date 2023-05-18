@@ -18,17 +18,17 @@ def main(metadata, citations, is_test, sample_size):
     with open(metadata, 'r') as f:
         data = json.load(f)
 
-    logger.info("Reading valid papers from path '{}'".format(citations))
+    logger.info("Reading citation graph from path '{}'".format(citations))
     with open(citations, 'r') as f:
-        valid_papers = json.load(f)
+        citation_graph = json.load(f)
 
     logger.info("Metadata lenght: {}".format(len(data)))
-    logger.info("Valid Papers lenght: {}".format(len(valid_papers)))
+    logger.info("Citation graph paper count: {}".format(len(citation_graph)))
 
     # select papers with at least 5 references
     logger.info("Incude papers having 5 or more references (wiki cross links) ")
     # paper has at least 5 references and is part of valid papers
-    papers = [paper for paper in data.values() if len(paper.get('references', [])) >= 5 and paper['paper_id'] in valid_papers]
+    papers = [paper for paper in data.values() if len(paper.get('references', [])) >= 5 and paper['paper_id'] in citation_graph]
     logger.info("Papers length after filtering {}".format(len(papers)))
     # select 1000 papers at random
     logger.info("Sample {} random papers".format(sample_size))
@@ -54,7 +54,7 @@ def main(metadata, citations, is_test, sample_size):
         name = "test.qrel"
     else:
         name = "val.qrel"
-    output_path = "scidocs_citation_data/{}".format(name)
+    output_path = "./holdout/scidocs_citation_data/{}".format(name)
     logger.info("Writing output to {}".format(output_path))
     with open(output_path, 'w') as f:
         for paper_id, items in output.items():
@@ -72,13 +72,13 @@ def main(metadata, citations, is_test, sample_size):
         for uncited_paper in items['uncited']:
             sample_ids.add(uncited_paper)
 
-    output_path = "scidocs_citation_data/{}".format("sample.ids")
+    output_path = "./holdout/citation/{}".format("sample.ids")
     logger.info("Writing output to {}".format(output_path))
     with open(output_path, "w") as f:
         for paper_id in sample_ids:
             f.write(f"{paper_id}\n")
 
-    output_path = "scidocs_citation_data/{}".format("sample-metadata.json")
+    output_path = "./holdout/citation/{}".format("sample-metadata.json")
     logger.info("Writing output to {}".format(output_path))
     sample_metadata = filter_dict_by_keylist(data, list(sample_ids))
     with open(output_path, "w") as f:
@@ -89,7 +89,7 @@ def main(metadata, citations, is_test, sample_size):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--metadata", default="metadata.json")
-    ap.add_argument("--citations", default="final_citation_data_filtered.json")
+    ap.add_argument("--citations", default="./holdout/data.json")
     ap.add_argument("--is_test_val", choices=['test','val'], help="Specify test or val")
     ap.add_argument("--sample_size", default=1000, type=int)
     args = ap.parse_args()
