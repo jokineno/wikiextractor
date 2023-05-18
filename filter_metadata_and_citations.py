@@ -19,7 +19,7 @@ def filter_dict_by_keylist(d, l):
     return dict(filter(lambda val: val[0] in l, d.items()))
 
 
-def main(metadata_path, citations_path,idlist_path, output_dir):
+def main(metadata_path, citations_path, idlist_path, output_dir):
     metadata = read_file(metadata_path)
     citations = read_file(citations_path)
     idlist = read_file(idlist_path)
