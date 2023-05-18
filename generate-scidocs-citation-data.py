@@ -54,7 +54,7 @@ def main(metadata, citations, is_test, sample_size):
         name = "test.qrel"
     else:
         name = "val.qrel"
-    output_path = "./holdout/scidocs_citation_data/{}".format(name)
+    output_path = "./holdout/citation/{}".format(name)
     logger.info("Writing output to {}".format(output_path))
     with open(output_path, 'w') as f:
         for paper_id, items in output.items():
