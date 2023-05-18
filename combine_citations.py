@@ -14,11 +14,13 @@ import sys
 log_file = sys.argv[0] + ".log"
 logger = setup_logging(log_output=log_file)
 
+
 def read_files():
     logger.info("Reading direct_citations.json")
     with open("direct_citations.json", "r") as f:
         direct_data = json.load(f)
-    
+
+    logger.info("Reading hard_negatives.json")
     with open("hard_negatives.json", "r") as f:
         hard_negatives = json.load(f)
 
@@ -32,10 +34,16 @@ def combine_citations():
     return direct
 
 
+def save(output_path, output):
+    logger.info("Saving to path {}".format(output_path))
+    with open(output_path, "w") as f:
+        f.write(json.dumps(output))
+    logger.info("Saved.")
+
+
 if __name__ == "__main__":
     metadata = combine_citations()
     output_path = "final_citation_data.json"
-    with open(output_path, "w") as f:
-        f.write(json.dumps(metadata))
+    save(output_path, metadata)
 
     print(f"Wrote metadata to {output_path}")

@@ -30,7 +30,13 @@ def get_metadata_articles():
         data = json.load(f)
     return data 
 
-def get_hard_negatives(P1, P2_list, data, valid_articles, debug):
+
+def get_hard_negatives(P1, P2_list, data, metadata, debug):
+    #P1 = query_paper_id
+    #P2_list => cross wiki links from query_paper
+    #data = direct_citations dataset
+    #valid_articles = master data => all articles
+    # debug
     global not_found
     '''
     We denote as
@@ -61,7 +67,7 @@ def get_hard_negatives(P1, P2_list, data, valid_articles, debug):
                 print(f"hard_negatives: {hard_negatives}")
         # Basically all citations of a paper cited by the query paper are hard negatives.  
         hard_negatives.update(P3_list)
-        # Just remove those that are also cited by the query paper. So P1 !=> P3 works. 
+        # Just remove those that are also cited by the query paper. So full fill the P1 !=> P3 condition .
         hard_negatives = hard_negatives.difference(P2_list)
 
         if debug and "1024" in P3_list:
@@ -76,7 +82,7 @@ def get_hard_negatives(P1, P2_list, data, valid_articles, debug):
     all_hard_negatives = list(all_hard_negatives)
     final = []
     for article in all_hard_negatives:
-        if valid_articles.get(article) is None:
+        if metadata.get(article) is None: # CHECK THAT ARTICLE IS IN METADATA
             continue
         final.append(article) 
 
@@ -84,54 +90,65 @@ def get_hard_negatives(P1, P2_list, data, valid_articles, debug):
     if debug:
         print(f"Query: {P1}, Citations:{P2_list}, All Hard Negatives: {final}")
 
-
+    # DOUBLE CHECK THAT HARD NEGATIVE IS NOT CITED BY THE QUERY PAPER
     if any(HN in P2_list for HN in final):
         raise Exception(f"HARD NEGATIVE CANNOT BE CITED BY THE QUERY PAPER. Query Paper {P1} ")
 
     return final
 
 
-x = 0
-hard_mapping = {}
-prev_size = 0
-debug = False
-print(sys.argv)
-if "--debug" in sys.argv:
-    debug = True
+def main():
+    x = 0
+    hard_negatives_mapping = {}
+    prev_size = 0
+    debug = False
+    print(sys.argv)
+    if "--debug" in sys.argv:
+        debug = True
 
-debug_id = None
-if debug:
-    debug_id = sys.argv[2]
-    print(f"Debug mode. debug_id: {debug_id}")
+    debug_id = None
+    if debug:
+        debug_id = sys.argv[2]
+        print(f"Debug mode. debug_id: {debug_id}")
+
+    with open("direct_citations.json", "r") as f:
+        direct_citations = json.load(f)
+
+    metadata = get_metadata_articles()
+    for query_paper_id, citations in tqdm(direct_citations.items()):
+        if debug is True and query_paper_id != debug_id:
+            continue
+        if x % 50_000 == 0:
+            print(f"Handling {x}/{len(direct_citations)}")
+        query_paper_links = list(citations.keys())
+        try:
+            hard_negatives = get_hard_negatives(query_paper_id, query_paper_links, direct_citations, metadata, debug)
+            hard_negatives_mapping[query_paper_id] = {article_id: {"count": 1} for article_id in hard_negatives}
+        except TypeError as typerror:
+            print("HARD NEGATIVES", hard_negatives_mapping)
+            raise Exception(typerror)
+        except Exception as e:
+            raise Exception(e)
+        file_size = sys.getsizeof(hard_negatives) / 1000 / 1000
+        file_size_100 = round(file_size / 100) * 100
+
+        if file_size_100 % 100 == 0 and file_size_100 > prev_size:
+            prev_size = file_size_100
+            print(f"File size {file_size}")
+
+        x += 1
+
+    output_path = "hard_negatives.json"
+    errors_path = "not_found_errors.json"
+    save(output_path, hard_negatives_mapping)
+    save(errors_path, list(not_found))
+
+def save(output_path, output):
+    logger.info("Saving to path {}".format(output_path))
+    with open(output_path, "w") as f:
+        f.write(json.dumps(output))
+    logger.info("Saved.")
 
 
-
-with open("direct_citations.json", "r") as f:
-    data = json.load(f)
-
-
-valid_articles = get_metadata_articles()
-for query_paper_id, citations in tqdm(data.items()):
-    if debug is True and query_paper_id != debug_id:
-        continue       
-    if x % 50_000 == 0:
-        print(f"Handling {x}/{len(data)}")
-    query_references = list(citations.keys())
-    hard_negatives = get_hard_negatives(query_paper_id, query_references, data, valid_articles, debug)
-    hard_mapping[query_paper_id] = {article_id: {"count": 1} for article_id in hard_negatives}
-    file_size = sys.getsizeof(hard_mapping) / 1000 / 1000
-    file_size_100 = round(file_size / 100) * 100
-
-    if file_size_100 % 100 == 0 and file_size_100 > prev_size:
-        prev_size = file_size_100
-        print(f"File size {file_size}")
-    
-    x+=1
-
-output_path = "hard_negatives.json"
-errors_path = "not_found_errors.json"
-with open(output_path, "w") as f:
-    f.write(json.dumps(hard_mapping))
-
-with open(errors_path, "w") as f:
-    f.write(json.dumps(list(not_found)))
+if __name__ == "__main__":
+    main()

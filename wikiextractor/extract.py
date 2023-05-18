@@ -1236,12 +1236,14 @@ class Extractor:
                 "classes": self.classes,
                 "introduction": introduction,
                 "introduction_references": introduction_links,
+                "references": [item['article_id'] for row in introduction_links for item in row],
                 "all_wiki_references": self.internal_links
                 #'sections': self.sections
             }
             out_str = json.dumps(json_data)
             out.write(out_str)
-            out.write("\n")
+            out.write("\n\n")
+
         else:
             header = '<doc id="%s" url="%s" title="%s">\n' % (
                 self.id,

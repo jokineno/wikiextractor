@@ -46,12 +46,16 @@ def main(citations_path):
 
 
     output_path = "final_citation_data_filtered.json"
-    with open(output_path, "w") as f:
-        f.write(json.dumps(citations_filtered))
+    save(output_path, citations_filtered)
 
     missing_data_output_path = "missing_citation_data.json"
-    with open(missing_data_output_path, "w") as f:
-        f.write(json.dumps(master_counter))
+    save(missing_data_output_path, master_counter)
+
+def save(output_path, output):
+    logger.info("Saving to path {}".format(output_path))
+    with open(output_path, "w") as f:
+        f.write(json.dumps(output))
+    logger.info("Saved.")
 
 
 if __name__ == "__main__":
