@@ -26,7 +26,7 @@ class Writer():
         logger.info(f"Finished writing {self.output_path}")
 
 
-def main(sample_size, output_path, training_dir, holdout_dir, metadata_path, citations_path):
+def main(sample_size, training_dir, holdout_dir, metadata_path, citations_path):
 
     with open(metadata_path, "r") as f:
         data = json.load(f)
@@ -82,23 +82,23 @@ def main(sample_size, output_path, training_dir, holdout_dir, metadata_path, cit
 
     for name, dataset in zip(["train.txt", "test.txt", "val.txt"], [train, test, val]):
 
-        path = output_path.strip("/") + "/" + name
+        path = "{}/{}".format(training_dir, name)
         logger.info("Writing file {} to {}".format(name, path))
         writer = Writer(path)
         for sample_id in dataset:
             writer.write(sample_id)
 
         writer.close()
-    all_keys_output_path = output_path.strip("/") + "/" + "all.txt"
+    all_keys_output_path = "{}/{}".format(training_dir, "all.txt")
     logger.info("Saving all keys to {}".format(all_keys_output_path))
-    with open(all_keys_output_path, "w") as f:
-        f.write(json.dumps(articles))
+    writer = Writer(path)
+    for sample_id in articles:
+        writer.write(sample_id)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--sample_size", type=int, help="sample x articles from all data.")
-    parser.add_argument("--output_path", default="training")
     parser.add_argument("--holdout_dir", default="holdout")
     parser.add_argument("--training_dir", default="training")
     parser.add_argument("--metadata", required=True)
@@ -106,10 +106,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     sample_size = args.sample_size
-    output_path = args.output_path
     holdout_dir = args.holdout_dir
     training_dir = args.training_dir
     metadata_path = args.metadata
     citations_path = args.citations
 
-    main(sample_size, output_path, training_dir, holdout_dir, metadata_path, citations_path)
+    main(sample_size, training_dir, holdout_dir, metadata_path, citations_path)

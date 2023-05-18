@@ -11,7 +11,6 @@ cp -v $METADATA ./holdout/metadata.json
 cp -v $METADATA ./training/metadata.json
 
 python prepare_train_test_val.py \
-  --output_path training \
   --holdout_dir ./holdout \
   --training_dir ./training \
   --metadata metadata.json \
