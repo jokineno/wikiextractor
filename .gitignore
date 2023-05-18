@@ -64,3 +64,5 @@ wiki_files.zip
 *.txt
 /inference_demo/
 scidocs_citation_data/
+/holdout/
+/holdout_demo/
