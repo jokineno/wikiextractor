@@ -27,7 +27,6 @@ mkdir -p holdout/citation/
 python generate-scidocs-citation-data.py \
   --metadata metadata.json \
   --citations holdout/data.json \
-  --is_test_val test \
   --sample_size $SAMPLE_SIZE
 
 echo "Done"

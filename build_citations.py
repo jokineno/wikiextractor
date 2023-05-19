@@ -31,15 +31,15 @@ def main():
         if key != paper_id: #THIS SHOULD NOT HAPPEN
             raise Exception("key does not equal to paper id")
 
-        direct_wiki_links = data['references']
-        if type(direct_wiki_links) is not list:
+        reference_ids = data['references']
+        if type(reference_ids) is not list:
             raise Exception("data['references'] is not list type")
 
-        if len(direct_wiki_links) == 0:
+        if len(reference_ids) == 0:
             articles_without_links.append(paper_id)
 
         citations = {}
-        for linked_article_id in list(direct_wiki_links):
+        for linked_article_id in reference_ids:
             if metadata.get(linked_article_id):
                 citations.update(
                     {
