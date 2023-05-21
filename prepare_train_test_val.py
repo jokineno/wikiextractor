@@ -57,11 +57,10 @@ def main(sample_size, training_dir, holdout_dir, metadata_path, citations_path):
         f.write(json.dumps(citations))
         logger.info("Saved training citations to {}".format(holdout_output_path))
 
-
     articles = list(citations.keys())
 
     if sample_size is not None and isinstance(sample_size, int):
-        logger.info("Generating {} samples".format(sample_size))
+        logger.info("Filtering {} samples, sample_size = ".format(sample_size, sample_size))
         articles = random.sample(articles, sample_size)
 
     total = len(articles)
@@ -97,8 +96,9 @@ def main(sample_size, training_dir, holdout_dir, metadata_path, citations_path):
 
 
 if __name__ == "__main__":
+    logger.info("Running script {}".format(sys.argv[0]))
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sample_size", type=int, help="sample x articles from all data.")
+    parser.add_argument("--sample_size", default=None, type=int, help="sample x articles from all data.")
     parser.add_argument("--holdout_dir", default="holdout")
     parser.add_argument("--training_dir", default="training")
     parser.add_argument("--metadata", required=True)
@@ -111,4 +111,10 @@ if __name__ == "__main__":
     metadata_path = args.metadata
     citations_path = args.citations
 
+    if sample_size:
+        logger.info("###Using sample size {}#####".format(sample_size))
+    else:
+        logger.info("###Using full data#####")
+
     main(sample_size, training_dir, holdout_dir, metadata_path, citations_path)
+    logger.info("Finished.")
