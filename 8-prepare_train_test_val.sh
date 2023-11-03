@@ -2,8 +2,8 @@
 
 set -x
 echo "Copy training data for training"
-mkdir -p training
-mkdir -p holdout
+mkdir -p -v training
+mkdir -p -v holdout
 
 METADATA="metadata.json"
 
@@ -19,13 +19,14 @@ if [ -z "$1" ]
     --metadata metadata.json \
     --citations final_citation_data_filtered.json
 else
-  echo Running with sample size $1
+  SAMPLE_SIZE="$1"
+  echo "Running with sample size $SAMPLE_SIZE"
   python prepare_train_test_val.py \
     --holdout_dir ./holdout \
     --training_dir ./training \
     --metadata metadata.json \
     --citations final_citation_data_filtered.json \
-    --sample_size $1
+    --sample_size $SAMPLE_SIZE
 fi
 
 SAMPLE_SIZE="$1"
