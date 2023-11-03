@@ -35,6 +35,7 @@ def extract_articles_from_citations(citations):
 def main(metadata_path, citations_path):
     """
     Checks that all articles in citations are in metadata.
+    Prints count of valid, invalid, other articles.
     """
     # open metadata
     logger.info("[*] Reading metadata from {}".format(metadata_path))

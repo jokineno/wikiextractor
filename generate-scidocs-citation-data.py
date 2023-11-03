@@ -26,32 +26,36 @@ def filter_dictionary(dictionary, selected_keys):
         if key in selected_keys:
             filtered_dict[key] = value
 
-    print("Took {} seconds".format(time.time() -now))
+    print("Took {} seconds".format(time.time() - now))
     return filtered_dict
 
 def filter_dictionary_2(dictionary, selected_keys):
+    """
+    Filters dictionary by selected keys
+    """
     now = time.time()
     filtered_dict = {}
     for key in selected_keys:
         filtered_dict[key] = dictionary[key]
-    print("Took {} seconds".format(time.time() -now))
+    print("Took {} seconds".format(time.time() - now))
     return filtered_dict
 
-def main(metadata, citations, sample_size):
+
+def main(metadata, citations, sample_size, output_dir):
     # load the data
-    logger.info("Reading metadata from path '{}'".format(metadata))
+    logger.info("[*] Reading metadata from path '{}'".format(metadata))
     with open(metadata, 'r') as f:
         data = json.load(f)
 
-    logger.info("Reading citation graph from path '{}'".format(citations))
+    logger.info("[*] Reading citation graph from path '{}'".format(citations))
     with open(citations, 'r') as f:
         citation_graph = json.load(f)
 
-    logger.info("Metadata length: {}".format(len(data)))
-    logger.info("Citation graph paper count: {}".format(len(citation_graph)))
+    logger.info("[*] Metadata length: {}".format(len(data)))
+    logger.info("[*] Citation graph paper count: {}".format(len(citation_graph)))
 
     # select papers with at least 5 references
-    logger.info("Include papers having 5 or more references (wiki cross links) ")
+    logger.info("[*] Include papers having 5 or more references (wiki cross links) ")
     # paper has at least 5 references and is part of holdout dataset
     papers = []
     for paper_id, links in citation_graph.items():
@@ -59,9 +63,9 @@ def main(metadata, citations, sample_size):
         if len(direct_citations) >= 5:
             papers.append({"paper_id": paper_id, "references": direct_citations})
 
-    logger.info("Papers length after filtering {}".format(len(papers)))
+    logger.info("[*] Found {} articles with 5 or 5+ references".format(len(papers)))
     # select 1000 papers at random
-    logger.info("Sample {} random papers".format(sample_size))
+    logger.info("[*] Sample {} random papers".format(sample_size))
     random.shuffle(papers)
     # Split the shuffled list into test and validation sets
     test_set = papers[:sample_size]  # 0 - 999
@@ -72,11 +76,12 @@ def main(metadata, citations, sample_size):
         for paper in query_papers:
             output[paper['paper_id']] = {'cited': [], 'uncited': []}
             references = paper['references']
+            # select 5 positive papers - these are papers cited by the query paper
             selected_cited_papers = random.sample(references, 5)
             for p in selected_cited_papers:
                 output[paper['paper_id']]['cited'].append(p)
             for i in range(25):
-                # select a random paper that is not in the reference list
+                # select a negative paper - this is a random paper that is not cited by the query paper.
                 while True:
                     random_paper = random.choice(papers)
                     if random_paper['paper_id'] not in references:
@@ -84,23 +89,19 @@ def main(metadata, citations, sample_size):
                 output[paper['paper_id']]['uncited'].append(random_paper['paper_id'])
 
         # write the results to a .qrel file
-        if case == "test":
-            name = "test.qrel"
-        else:
-            name = "val.qrel"
-
-        output_path = "./holdout/citation/{}".format(name)
-        logger.info("Writing output to {}".format(output_path))
+        output_filename = "{}.qrel".format(case)
+        output_path = "{}/{}".format(output_dir, output_filename)
+        logger.info("[*] Writing output to {}".format(output_path))
         with open(output_path, 'w') as f:
             for paper_id, items in output.items():
                 for reference in items['cited']:
                     f.write(f"{paper_id} 0 {reference} 1\n")
                 for other_paper in items['uncited']:
                     f.write(f"{paper_id} 0 {other_paper} 0\n")
-        logger.info("Done {}".format(output_path))
+        logger.info("[*] Saving citation (evaluation) data to {}".format(output_path))
 
         sample_ids = set()
-        # add all the query papers
+        logger.info("[*] Creating sample ids file containing paper ids of all query papers, positive and negative papers in {}.".format(output_filename))
         for paper, items in output.items():
             sample_ids.add(paper)
             for cited_paper in items['cited']:
@@ -108,26 +109,27 @@ def main(metadata, citations, sample_size):
             for uncited_paper in items['uncited']:
                 sample_ids.add(uncited_paper)
 
-        output_path = "./holdout/citation/{}".format("sample_{}.ids".format(case))
-        logger.info("Writing output to {}".format(output_path))
+        output_path = "{}/{}".format(output_dir, "sample_{}.ids".format(case))
+        logger.info("[*] Writing output to {}".format(output_path))
         with open(output_path, "w") as f:
             for paper_id in sample_ids:
                 f.write(f"{paper_id}\n")
-        logger.info("Wrote {}".format(output_path))
+        logger.info("[*] Wrote {}".format(output_path))
 
-        output_path = "./holdout/citation/{}".format("sample-metadata_{}.json".format(case))
-        logger.info("Writing output to {}".format(output_path))
+        output_path = "{}/{}".format(output_dir, "sample-metadata_{}.json".format(case))
+        logger.info("[*] Writing output to {}".format(output_path))
         sample_metadata = filter_dictionary_2(data, list(sample_ids))
         with open(output_path, "w") as f:
             f.write(json.dumps(sample_metadata))
-        logger.info("Wrote {}".format(output_path))
+        logger.info("[*] Wrote {}".format(output_path))
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--metadata", default="metadata.json")
     ap.add_argument("--citations", default="./holdout/data.json")
+    ap.add_argument("--output_dir", default="./holdout/citation")
     ap.add_argument("--sample_size", default=1000, type=int)
     args = ap.parse_args()
-
-    main(metadata=args.metadata, citations=args.citations, sample_size=args.sample_size)
+    print("[*] Given arguments: {}".format(args))
+    main(metadata=args.metadata, citations=args.citations, sample_size=args.sample_size, output_dir=args.output_dir)

@@ -7,7 +7,7 @@ logger = setup_logging(log_file)
 
 
 def read_file(filepath):
-    logger.info("Reading file {}".format(filepath))
+    logger.info("[*] Reading file {}".format(filepath))
     with open(filepath, "r") as f:
         data = json.load(f)
     return data
@@ -28,20 +28,20 @@ def main(metadata_path, citations_path, idlist_path, output_dir):
     citations_filtered = filter_dict_by_keylist(citations, idlist)
 
     # check lenghts
-    logger.info("idlist length {}".format(len(idlist)))
-    logger.info("filterd metadata length {}".format(len(metadata_filtered)))
-    logger.info("filtered citations length {}".format(len(citations_filtered)))
+    logger.info("[*] 'idlist' length {}".format(len(idlist)))
+    logger.info("[*] 'filtered' metadata length {}".format(len(metadata_filtered)))
+    logger.info("[*] 'filtered' citations length {}".format(len(citations_filtered)))
 
     for name, dataset in zip(["metadata.json", "data.json"], [metadata_filtered, citations_filtered]):
         output_path = output_dir.strip("/") + "/" + name
-        logger.info("Saving file to path {}".format(output_path))
+        logger.info("[*] Saving file to path {}".format(output_path))
         with open(output_path, "w") as f:
             f.write(json.dumps(dataset))
-        logger.info("Saved file {}".format(output_path))
+        logger.info("[*] Saved file {}".format(output_path))
 
 
 if __name__ == "__main__":
-    logger.info("Start.")
+    logger.info("[*] Start.")
     parser = argparse.ArgumentParser()
     parser.add_argument("--metadata", required=True)
     parser.add_argument("--citations", required=True)
@@ -55,4 +55,4 @@ if __name__ == "__main__":
     output_dir = args.output_dir
 
     main(metadata, citations, paper_id_list, output_dir)
-    logger.info("Finished.")
+    logger.info("[*] Finished.")

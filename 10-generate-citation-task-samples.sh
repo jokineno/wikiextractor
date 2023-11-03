@@ -2,31 +2,34 @@
 
 set -x
 
-echo "Starting to generate citation data"
-echo "For the data the task is to choose 1000 query papers and for each 5 cited papers and 25 uncited papers."
-echo "The inference task is to predict cited papers higher than uncited papers"
+echo "[*] Starting to generate data for evaluation the citation task (test.qrel, val.qrel files)"
+#echo "[*] For the data the task is to choose 1000 query papers and for each 5 cited papers and 25 uncited papers."
+#echo "[*] The inference task is to predict cited papers higher than uncited papers"
 
 SAMPLE_SIZE=$1
 if [ -z "$1" ]; then
-    echo "No argument was provided."
+    echo "[*] No argument was provided."
     exit 1
 else
-    echo "Argument was provided: $1"
+    echo "[*] Argument was provided: $1"
 fi
 
 
 if [[ $1 =~ ^[0-9]+$ ]]; then
-    echo "Argument is numeric: $1"
+    echo "[*] Argument is numeric: $1"
 else
-    echo "Argument is not numeric or not provided."
+    echo "[*] Argument is not numeric or not provided."
     exit 1
 fi
 
 
-mkdir -p holdout/citation/
+echo "[*] Generating samples with sample size $SAMPLE_SIZE"
+echo "[*] Creating output output dir holdout/citation."
+mkdir -p -v holdout/citation/
+# Creates val.qrel and test.qrel files for the citation task evaluation
 python generate-scidocs-citation-data.py \
   --metadata metadata.json \
   --citations holdout/data.json \
-  --sample_size $SAMPLE_SIZE
-
-echo "Done"
+  --sample_size $SAMPLE_SIZE \
+  --output_dir ./holdout/citation
+echo "[*] Done"
