@@ -11,14 +11,15 @@ import sys
 log_file = sys.argv[0] + ".log"
 logger = setup_logging(log_output=log_file)
 
-def extract_articles(citations):
+
+def extract_articles_from_citations(citations):
     """
     Citations is a dict object containing
     "query_paper_key": {
         "cited_paper_key": {"count": 1 } : here 1 represents hard negative.
     }
     """
-    logger.info("Starting to extract articles ids...")
+    logger.info("[*] Starting to extract articles ids...")
     articles = set()
     try:
         for article_id, other_papers in citations.items():
@@ -26,23 +27,26 @@ def extract_articles(citations):
             articles.update(list(other_papers.keys())) # add all the referenced articles and
     except AttributeError:
         print(citations)
-        raise Exception("error")
+        raise Exception("Error extracting articles from citations.")
 
-    logger.info("Done extracting..")
+    logger.info("[*] Successfully extracted articles/page_ids from citation graph.")
     return articles
 
 def main(metadata_path, citations_path):
+    """
+    Checks that all articles in citations are in metadata.
+    """
     # open metadata
-    logger.info("Reading metadata from {}".format(metadata_path))
+    logger.info("[*] Reading metadata from {}".format(metadata_path))
     with open(metadata_path, "r") as f:
         metadatas = json.load(f)
 
     # open final citation data
-    logger.info("Reading {}".format(citations_path))
+    logger.info("[*] Reading {}".format(citations_path))
     with open(citations_path, "r") as f:
         citations = json.load(f)
 
-    all_articles = extract_articles(citations)
+    all_articles = extract_articles_from_citations(citations)
 
     valid = []
     invalid = []
@@ -54,7 +58,7 @@ def main(metadata_path, citations_path):
                 invalid.append(article)
                 # print(f"invalid article: {article}")
                 continue
-            if type(metadata) is dict:
+            if type(metadata) is dict: # TODO check if this is really enough.
                 valid.append(article)
             else:
                 other.append(article)
@@ -63,22 +67,22 @@ def main(metadata_path, citations_path):
     except Exception as e:
         raise Exception(e)
 
-    print(f"Count of valid articles: {len(valid)}")
-    print(f"Count of invalid articles: {len(invalid)}")
-    print(f"Count of other articles: {len(other)}")
+    print(f"[*] Count of valid articles: {len(valid)}")
+    print(f"[*] Count of invalid articles: {len(invalid)}")
+    print(f"[*] Count of other articles: {len(other)}")
 
     if len(invalid) > 5:
-        print("======5 FIRST INVALID ARTICLES======")
+        print("[*] ======5 FIRST INVALID ARTICLES======")
         for n, i in enumerate(invalid[:5]):
             print(f"{n + 1}. example: (id={i}) {metadatas.get(i)}")
 
         print("\n\n")
-        print("======5 FIRST VALID ARTICLES======")
+        print("[*] ======5 FIRST VALID ARTICLES======")
         for n, i in enumerate(valid[:5]):
             print(f"{n + 1}. example: (id={i}) {metadatas.get(i)}")
 
     if len(invalid) == 0 and len(other) == 0 and len(valid) > 0:
-        print("All articles have existing metadata! Move on to training.")
+        print("[*] All articles have existing metadata! Move on to training.")
 
 
 

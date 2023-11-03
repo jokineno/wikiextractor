@@ -1,7 +1,8 @@
 #!/bin/bash
 
 set -x
-echo "Copy training data for training"
+echo "[*] Copy training data for training"
+echo "[*] Make output directories training,holdout"
 mkdir -p -v training
 mkdir -p -v holdout
 
@@ -12,7 +13,7 @@ cp -v $METADATA ./training/metadata.json
 
 if [ -z "$1" ]
  then
-   echo "################NO SAMPLE SIZE GIVEN. FULL DATA################"
+   echo "[*]  NO SAMPLE SIZE GIVEN. FULL DATA"
   python prepare_train_test_val.py \
     --holdout_dir ./holdout \
     --training_dir ./training \
@@ -20,7 +21,7 @@ if [ -z "$1" ]
     --citations final_citation_data_filtered.json
 else
   SAMPLE_SIZE="$1"
-  echo "Running with sample size $SAMPLE_SIZE"
+  echo "[*] Running with sample size $SAMPLE_SIZE"
   python prepare_train_test_val.py \
     --holdout_dir ./holdout \
     --training_dir ./training \
@@ -29,18 +30,9 @@ else
     --sample_size $SAMPLE_SIZE
 fi
 
-SAMPLE_SIZE="$1"
-
-python prepare_train_test_val.py \
-  --holdout_dir ./holdout \
-  --training_dir ./training \
-  --metadata metadata.json \
-  --citations final_citation_data_filtered.json \
-  --sample_size $SAMPLE_SIZE
-
-echo "Running data_validator to holdout and training sets."
-echo "##############Running data validator to holdout##############"
+echo "[*] Running data_validator to holdout and training sets."
+echo "[*] Running data validator to holdout dataset"
 python data_validator.py --citations holdout/data.json --metadata holdout/metadata.json
-echo "##############Running data validator to training##############"
+echo "[*] Running data validator to training dataset"
 python data_validator.py --citations training/data.json --metadata training/metadata.json
-echo "Done"
+echo "[*] Done"
