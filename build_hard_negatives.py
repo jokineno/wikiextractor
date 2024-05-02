@@ -14,7 +14,7 @@ import json
 from tqdm import tqdm
 import sys
 
-from common import setup_logging
+from common import setup_logging, article_exists
 import sys
 log_file = sys.argv[0] + ".log"
 logger = setup_logging(log_output=log_file)
@@ -25,15 +25,15 @@ cache = {}
 count = 0
 not_found = set()
 
-def get_metadata_articles():
+def get_metadata():
     with open("metadata.json", "r") as f:
         data = json.load(f)
     return data 
 
 
-def get_hard_negatives(P1, P2_list, data, metadata, debug):
+def get_hard_negatives(P1, P2_list, data, metadata):
     #P1 = query_paper_id
-    #P2_list => cross wiki links from query_paper
+    #P2_list => cross-references from query_paper
     #data = direct_citations dataset
     #valid_articles = master data => all articles
     # debug
@@ -60,23 +60,9 @@ def get_hard_negatives(P1, P2_list, data, metadata, debug):
             continue
         
         
-        if debug:
-            if "1024" in P3_list:
-                print("FOUND")
-                print(f"citation: {P2}, citations: {P3_list}")
-                print(f"hard_negatives: {hard_negatives}")
-        # Basically all citations of a paper cited by the query paper are hard negatives.  
         hard_negatives.update(P3_list)
         # Just remove those that are also cited by the query paper. So full fill the P1 !=> P3 condition .
         hard_negatives = hard_negatives.difference(P2_list)
-
-        if debug and "1024" in P3_list:
-            print(f"hard_negatives after updated: {hard_negatives}")
-            print(f"hard_negative after filtering: {hard_negatives}")
-            print("-----------\n\n")
-        
-        #if debug:
-        #    print(f"HN: {P2}: {hard_negatives}\n")
         all_hard_negatives.update(list(hard_negatives))
 
     all_hard_negatives = list(all_hard_negatives)
@@ -86,14 +72,9 @@ def get_hard_negatives(P1, P2_list, data, metadata, debug):
             continue
         final.append(article) 
 
-
-    if debug:
-        print(f"Query: {P1}, Citations:{P2_list}, All Hard Negatives: {final}")
-
     # DOUBLE CHECK THAT HARD NEGATIVE IS NOT CITED BY THE QUERY PAPER
     if any(HN in P2_list for HN in final):
         raise Exception(f"HARD NEGATIVE CANNOT BE CITED BY THE QUERY PAPER. Query Paper {P1} ")
-
     return final
 
 
@@ -101,28 +82,16 @@ def main():
     x = 0
     hard_negatives_mapping = {}
     prev_size = 0
-    debug = False
-    print(sys.argv)
-    if "--debug" in sys.argv:
-        debug = True
-
-    debug_id = None
-    if debug:
-        debug_id = sys.argv[2]
-        print(f"Debug mode. debug_id: {debug_id}")
-
     with open("direct_citations.json", "r") as f:
         direct_citations = json.load(f)
 
-    metadata = get_metadata_articles()
+    metadata = get_metadata()
     for query_paper_id, citations in tqdm(direct_citations.items()):
-        if debug is True and query_paper_id != debug_id:
-            continue
-        if x % 50_000 == 0:
-            print(f"Handling {x}/{len(direct_citations)}")
+        if not article_exists(metadata, query_paper_id):
+            raise Exception(f"Paper {query_paper_id} not found in metadata.")
         query_paper_links = list(citations.keys())
         try:
-            hard_negatives = get_hard_negatives(query_paper_id, query_paper_links, direct_citations, metadata, debug)
+            hard_negatives = get_hard_negatives(query_paper_id, query_paper_links, direct_citations, metadata)
             hard_negatives_mapping[query_paper_id] = {article_id: {"count": 1} for article_id in hard_negatives}
         except TypeError as typerror:
             print("HARD NEGATIVES", hard_negatives_mapping)

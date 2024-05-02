@@ -24,21 +24,6 @@ def read_title2id():
         return data
 
 
-def build_metadata():
-    global valid_ids, count
-    wiki_files = get_files()
-    title2id = read_title2id()
-    metadata = {}
-    for i, wiki in enumerate(wiki_files):
-        # logger.info(f"Handling {i+1}/{len(wiki_files)}, {wiki}")
-        with open(wiki, "r") as f:
-            data = f.read()
-        metadata = handle_wiki(data, metadata, title2id, wiki)
-    output_path = "metadata.json"
-    write_data(output_path, metadata)
-    write_data("valid_ids.json", list(valid_ids))
-
-
 def write_data(output_path, data):
     logger.info("Saving data to path {}".format(output_path))
     with open(output_path, "w") as f:
@@ -109,11 +94,11 @@ def handle_wiki(data, metadata, title2id, wiki_filename):
         title = sample["title"]
         references = sample['references']
         handle_classes(title, paper_id, sample['classes'], title2id)
-        character_count_filter = 50
-        if len(introduction_text) < character_count_filter:  # skip introductions that are less than 50 characters. Do configurable.
+        character_count_filter = 90 # empirical analysis - dropping the lowest 5% percentile
+        if len(introduction_text) < character_count_filter:  # skip introductions that are less than 90 characters. Do configurable.
             logger.debug("Skipping article {}".format(title))
             pass
-        elif "(täsmennyssivu)" in title:
+        elif "(täsmennyssivu)" in title: # skip täsmennyssivu
             pass
         else:
             metadata[paper_id] = {}
@@ -123,7 +108,23 @@ def handle_wiki(data, metadata, title2id, wiki_filename):
             metadata[paper_id]['references'] = references
             metadata[paper_id]['classes'] = [item['class_id'] for item in sample['classes'] if item['class_id'] is not None]
             valid_ids.add(paper_id)
-    return metadata
+
+
+
+def build_metadata():
+    global valid_ids, count
+    wiki_files = get_files()
+    title2id = read_title2id()
+    metadata = {}
+    for i, wiki in enumerate(wiki_files):
+        #print(i, wiki)
+        # logger.info(f"Handling {i+1}/{len(wiki_files)}, {wiki}")
+        with open(wiki, "r") as f:
+            data = f.read()
+        handle_wiki(data, metadata, title2id, wiki)
+    output_path = "metadata.json"
+    write_data(output_path, metadata)
+    write_data("valid_ids.json", list(valid_ids))
 
 
 def main():

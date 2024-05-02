@@ -69,7 +69,7 @@ def main(sample_size, training_dir, holdout_dir, metadata_path, citations_path):
     logger.info("[*] Total count of keys in citations after moving 20% of data to holdout dataset: {}".format(len(articles)))
 
     if sample_size is not None and isinstance(sample_size, int):
-        logger.info("[*] Filtering {} samples, sample_size = ".format(sample_size, sample_size))
+        logger.info("[*] Filtering {} samples (sample_size = {})".format(sample_size, sample_size))
         articles = random.sample(articles, sample_size)
 
     total = len(articles)
@@ -88,7 +88,7 @@ def main(sample_size, training_dir, holdout_dir, metadata_path, citations_path):
     val_fraq = len(val) / total
     train_fraq = len(train) / total
 
-    logger.info(f"[*] train size: {len(train)} ({train_fraq}),\ntest_size = {len(test)} ({test_fraq}),\n validation size = {len(val)} ({val_fraq})")
+    logger.info(f"[*] train size: {len(train)} ({train_fraq}), test_size = {len(test)} ({test_fraq}),  validation size = {len(val)} ({val_fraq})")
 
     for name, dataset in zip(["train.txt", "test.txt", "val.txt"], [train, test, val]):
 
@@ -101,7 +101,7 @@ def main(sample_size, training_dir, holdout_dir, metadata_path, citations_path):
         writer.close()
     all_keys_output_path = "{}/{}".format(training_dir, "all.txt")
     logger.info("[*] Saving all keys to {}".format(all_keys_output_path))
-    writer = Writer(path)
+    writer = Writer(all_keys_output_path)
     for sample_id in articles:
         writer.write(sample_id)
 

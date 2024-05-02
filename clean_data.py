@@ -37,7 +37,7 @@ def main(citations_path):
             master_counter.update({"all_missing"})
             continue
 
-        if count_5 is None:
+        if count_5 is None: # each paper should have at least one direct citation
             logger.info("Paper {} has no direct citations".format(query))
             master_counter.update({"count_5_missing"})
         if count_1 is None:
@@ -46,6 +46,7 @@ def main(citations_path):
 
 
     output_path = "final_citation_data_filtered.json"
+    print("Count of query papers: ", len(citations_filtered))
     save(output_path, citations_filtered)
 
     missing_data_output_path = "missing_citation_data.json"

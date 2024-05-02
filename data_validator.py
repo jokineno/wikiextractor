@@ -3,7 +3,7 @@ import sys
 import json
 import argparse
 """
-This script reads metadata.json and final_citation_data.json and checks if there are problems. 
+This script reads metadata.json and final_citation_data.json and  
 """
 
 from common import setup_logging
@@ -56,10 +56,11 @@ def main(metadata_path, citations_path):
         for article in all_articles:
             metadata = metadatas.get(article)
             if metadata is None:
+                print("Invalid article", article)
                 invalid.append(article)
                 # print(f"invalid article: {article}")
                 continue
-            if type(metadata) is dict: # TODO check if this is really enough.
+            if isinstance(metadata, dict): # TODO check if this is really enough.
                 valid.append(article)
             else:
                 other.append(article)
